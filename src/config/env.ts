@@ -1,8 +1,10 @@
 import z, { flattenError } from "zod";
 
 const envSchema = z.object({
+	APP_URL: z.string().nonempty(),
 	FE_URL: z.string().nonempty(),
 	PORT: z.string().nonempty(),
+	ENV: z.enum(["production", "development"]).nonoptional(),
 
 	DATABASE_URL: z.string().nonempty(),
 
