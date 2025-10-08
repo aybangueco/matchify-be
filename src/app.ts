@@ -5,6 +5,7 @@ import { prettyJSON } from "hono/pretty-json";
 import env from "./config/env";
 import createApp from "./lib/create-app";
 import { handleAPIErrors, handleNotFoundRoutes } from "./lib/errors";
+import { authenticate } from "./middlewares";
 import { authRouter } from "./routes";
 
 const app = createApp();
@@ -22,9 +23,15 @@ app.use(
 		credentials: isProd,
 	}),
 );
-app.use(csrf({ origin: env.FE_URL }));
+
+if (isProd) {
+	app.use(csrf({ origin: env.FE_URL }));
+}
+
 app.use(logger());
 app.use(prettyJSON());
+
+app.use(authenticate);
 
 app.route("/auth", authRouter);
 
