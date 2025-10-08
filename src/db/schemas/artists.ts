@@ -8,11 +8,11 @@ import type z from "zod";
 import { usersTable } from "./users";
 
 export const artistsTable = pgTable("artists", {
-	id: uuid("id").defaultRandom().notNull(),
+	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	artistName: varchar("artist_name").notNull(),
 	imageURL: varchar("image_url").notNull(),
 	createdBy: uuid("created_by")
-		.references(() => usersTable.id)
+		.references(() => usersTable.id, { onDelete: "cascade" })
 		.notNull(),
 	createdAt: timestamp("created_at").defaultNow().notNull(),
 	updatedAt: timestamp("updated_at").defaultNow().notNull(),
