@@ -8,15 +8,17 @@ export async function generateJWTToken<T extends JWTPayload>({
 	payload: T;
 	secret: string;
 }) {
-	return await sign(payload, secret);
+	return await sign(payload, secret, "HS256");
 }
 
-export async function verifyJWTToken({
+export async function verifyJWTToken<T extends JWTPayload>({
 	token,
 	secret,
+	issuer,
 }: {
 	token: string;
 	secret: string;
-}) {
-	return await verify(token, secret);
+	issuer: string;
+}): Promise<T> {
+	return (await verify(token, secret, { alg: "HS256", iss: issuer })) as T;
 }
