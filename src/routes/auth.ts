@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import * as argon2 from "argon2";
 import { eq } from "drizzle-orm";
-import { setCookie } from "hono/cookie";
+import { getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
 import db from "@/config/db";
 import env from "@/config/env";
@@ -13,10 +13,51 @@ import {
 import createApp from "@/lib/create-app";
 import { errors } from "@/lib/errors";
 import { HttpStatus } from "@/lib/http";
-import { generateJWTToken } from "@/lib/jwt";
+import { generateJWTToken, verifyJWTToken } from "@/lib/jwt";
 import type { UserPayload } from "@/lib/types";
+import { requireAuthenticated } from "@/middlewares/authMiddleware";
 
 const authRouter = createApp();
+
+authRouter.get("/me", requireAuthenticated, async (c) => {
+	const user = c.get("user");
+
+	return c.json(user, HttpStatus.Ok.code);
+});
+
+authRouter.post("/refresh", async (c) => {
+	const refreshToken = getCookie(c, "refreshToken");
+
+	if (!refreshToken) {
+		throw errors.AuthRequiredErr();
+	}
+
+	const payload = await verifyJWTToken<UserPayload>({
+		token: refreshToken,
+		secret: env.REFRESH_TOKEN_KEY,
+		issuer: "matchify-api",
+	});
+
+	// Get date now so we can add it on iat
+	const now = Math.floor(Date.now() / 1000);
+	const accessTokenExpiry = now + 60 * 60; // Expires in 1 hour
+
+	const accessToken = await generateJWTToken({
+		payload: {
+			sub: payload.sub,
+			iss: "matchify-api",
+			iat: now,
+			exp: accessTokenExpiry,
+		},
+		secret: env.ACCESS_TOKEN_KEY,
+	});
+
+	return c.json({
+		success: true,
+		message: "Access token refreshed successfully",
+		accessToken,
+	});
+});
 
 authRouter.post(
 	"/login",
