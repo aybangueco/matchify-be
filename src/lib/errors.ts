@@ -34,6 +34,10 @@ export const errors = {
 		new HTTPException(HttpStatus.Unauthorized.code, {
 			message: "Invalid username or password",
 		}),
+	AuthRequiredErr: () =>
+		new HTTPException(HttpStatus.Unauthorized.code, {
+			message: HttpStatus.Unauthorized.message,
+		}),
 };
 
 export function handleNotFoundRoutes(): Response | Promise<Response> {
