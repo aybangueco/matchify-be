@@ -1,0 +1,18 @@
+services:
+  database:
+    image: postgres:latest
+    restart: always
+    container_name: matchify-database
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=matchify-dev-db
+    ports:
+      - 5432:5432
+    expose:
+      - 5432:5432
+    volumes:
+      - pg_data:/var/lib/postgresql
+
+volumes:
+  pg_data:
