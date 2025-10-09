@@ -5,12 +5,16 @@ import {
 	createUpdateSchema,
 } from "drizzle-zod";
 import type z from "zod";
+import { profilesTable } from "./profiles";
 import { usersTable } from "./users";
 
 export const artistsTable = pgTable("artists", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	artistName: varchar("artist_name").notNull(),
 	imageURL: varchar("image_url").notNull(),
+	profile: uuid("profile")
+		.references(() => profilesTable.id, { onDelete: "cascade" })
+		.notNull(),
 	createdBy: uuid("created_by")
 		.references(() => usersTable.id, { onDelete: "cascade" })
 		.notNull(),
