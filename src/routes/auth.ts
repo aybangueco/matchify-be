@@ -1,7 +1,7 @@
 import { zValidator } from "@hono/zod-validator";
 import * as argon2 from "argon2";
 import { eq } from "drizzle-orm";
-import { getCookie, setCookie } from "hono/cookie";
+import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { HTTPException } from "hono/http-exception";
 import db from "@/config/db";
 import env from "@/config/env";
@@ -213,5 +213,18 @@ authRouter.post(
 		);
 	},
 );
+
+// We only remove refresh token from cookies, as we will manually remove
+// access token from the client side. The client can still use the access token
+// until it expires, but without the refresh token, the client won't be able to
+// refreh their access token upon expiry.
+authRouter.post("/logout", requireAuthenticated, (c) => {
+	deleteCookie(c, "refreshToken");
+
+	return c.json(
+		{ success: true, message: "Logged out successfully" },
+		HttpStatus.Ok.code,
+	);
+});
 
 export default authRouter;
