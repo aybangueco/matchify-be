@@ -5,8 +5,6 @@ import { prettyJSON } from "hono/pretty-json";
 import env from "./config/env";
 import createApp from "./lib/create-app";
 import { handleAPIErrors, handleNotFoundRoutes } from "./lib/errors";
-import { authenticate } from "./middlewares";
-import { authRouter, profileRouter } from "./routes";
 
 const app = createApp();
 
@@ -35,11 +33,6 @@ if (isProd) {
 
 app.use(logger());
 app.use(prettyJSON());
-
-app.use(authenticate);
-
-app.route("/auth", authRouter);
-app.route("/profile", profileRouter);
 
 app.notFound(handleNotFoundRoutes);
 app.onError(handleAPIErrors);

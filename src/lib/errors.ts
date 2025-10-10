@@ -38,6 +38,10 @@ export const errors = {
 		new HTTPException(HttpStatus.Unauthorized.code, {
 			message: HttpStatus.Unauthorized.message,
 		}),
+	NotFoundErr: () =>
+		new HTTPException(HttpStatus.NotFound.code, {
+			message: HttpStatus.NotFound.message,
+		}),
 };
 
 export function handleNotFoundRoutes(): Response | Promise<Response> {
