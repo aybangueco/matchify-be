@@ -3,8 +3,10 @@ import { csrf } from "hono/csrf";
 import { logger } from "hono/logger";
 import { prettyJSON } from "hono/pretty-json";
 import env from "./config/env";
+import { auth } from "./lib/auth";
 import createApp from "./lib/create-app";
 import { handleAPIErrors, handleNotFoundRoutes } from "./lib/errors";
+import { authenticate } from "./middlewares/auth";
 
 const app = createApp();
 
@@ -33,6 +35,10 @@ if (isProd) {
 
 app.use(logger());
 app.use(prettyJSON());
+
+app.use(authenticate);
+
+app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.notFound(handleNotFoundRoutes);
 app.onError(handleAPIErrors);
