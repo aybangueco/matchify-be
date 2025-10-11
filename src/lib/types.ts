@@ -1,10 +1,10 @@
 import type { JWTPayload } from "hono/utils/jwt/types";
-import type { auth } from "./auth";
+import type { Session, User } from "@/db/schemas";
 
 export type AppBindings = {
 	Variables: {
-		user: typeof auth.$Infer.Session.user | null;
-		session: typeof auth.$Infer.Session.session | null;
+		user: User | null;
+		session: Session | null;
 	};
 };
 
