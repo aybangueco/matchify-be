@@ -11,3 +11,17 @@ export type AppBindings = {
 export interface UserPayload extends JWTPayload {
 	sub: unknown;
 }
+
+export type ArtistMatchInfoImage = {
+	"#text": string;
+	size: "small" | "medium" | "large" | "extralarge";
+};
+
+export interface ArtistMatchInfo {
+	name: string;
+	listeners: string;
+	mbid: string;
+	url: string;
+	streamable: string;
+	image: ArtistMatchInfoImage[];
+}
