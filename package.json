@@ -6,7 +6,8 @@
 		"db:generate": "drizzle-kit generate",
 		"db:migrate": "drizzle-kit migrate",
 		"db:up": "drizzle-kit up",
-		"db:down": "drizzle-kit drop"
+		"db:down": "drizzle-kit drop",
+		"db:studio": "drizzle-kit studio"
 	},
 	"dependencies": {
 		"@hono/zod-validator": "^0.7.3",
