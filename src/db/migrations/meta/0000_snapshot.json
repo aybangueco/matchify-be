@@ -1,5 +1,5 @@
 {
-  "id": "010c4464-9284-414d-81e6-55331ac88808",
+  "id": "87d99067-45bd-4f49-8a3c-28dc15a32c32",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -17,12 +17,6 @@
         },
         "artist_name": {
           "name": "artist_name",
-          "type": "varchar",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "image_url": {
-          "name": "image_url",
           "type": "varchar",
           "primaryKey": false,
           "notNull": true
@@ -395,9 +389,99 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.profiles": {
+      "name": "profiles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location": {
+          "name": "location",
+          "type": "varchar(30)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bio": {
+          "name": "bio",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pronoun": {
+          "name": "pronoun",
+          "type": "pronoun",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "profiles_user_id_user_id_fk": {
+          "name": "profiles_user_id_user_id_fk",
+          "tableFrom": "profiles",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "profiles_user_id_unique": {
+          "name": "profiles_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "user_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
-  "enums": {},
+  "enums": {
+    "public.pronoun": {
+      "name": "pronoun",
+      "schema": "public",
+      "values": [
+        "He/His",
+        "She/Her"
+      ]
+    }
+  },
   "schemas": {},
   "sequences": {},
   "roles": {},

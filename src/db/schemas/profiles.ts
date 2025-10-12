@@ -23,7 +23,6 @@ export const profilesTable = pgTable("profiles", {
 	userID: text("user_id")
 		.unique()
 		.references(() => user.id),
-	avatarLink: text("avatar_link"),
 	location: varchar("location", { length: 30 }),
 	bio: varchar("bio", { length: 100 }),
 	pronoun: PronounEnum("pronoun").notNull(),

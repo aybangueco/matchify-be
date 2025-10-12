@@ -10,7 +10,6 @@ import { user } from "./auth";
 export const artistsTable = pgTable("artists", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	artistName: varchar("artist_name").notNull(),
-	imageURL: varchar("image_url").notNull(),
 	createdBy: text("created_by")
 		.references(() => user.id, { onDelete: "cascade" })
 		.notNull(),
