@@ -7,6 +7,7 @@ import { auth } from "./lib/auth";
 import createApp from "./lib/create-app";
 import { handleAPIErrors, handleNotFoundRoutes } from "./lib/errors";
 import { authenticate } from "./middlewares/auth";
+import { artistRouter, profileRouter } from "./routes";
 
 const app = createApp();
 
@@ -22,7 +23,7 @@ app.use(
 			"X-Custom-Header",
 			"Upgrade-Insecure-Requests",
 		],
-		allowMethods: ["POST", "GET", "OPTIONS"],
+		allowMethods: ["POST", "GET", "PUT", "DELETE", "OPTIONS"],
 		exposeHeaders: ["Content-Length", "X-Kuma-Revision"],
 		maxAge: 600,
 		credentials: true,
@@ -39,6 +40,9 @@ app.use(prettyJSON());
 app.use(authenticate);
 
 app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
+
+app.route("/profile", profileRouter);
+app.route("/artist", artistRouter);
 
 app.notFound(handleNotFoundRoutes);
 app.onError(handleAPIErrors);
