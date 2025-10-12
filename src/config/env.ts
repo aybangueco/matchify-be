@@ -8,6 +8,8 @@ const envSchema = z.object({
 
 	DATABASE_URL: z.string().nonempty(),
 
+	FM_API: z.string().nonempty(),
+
 	BETTER_AUTH_SECRET: z.string().nonempty(),
 	BETTER_AUTH_URL: z.string().nonempty(),
 });
