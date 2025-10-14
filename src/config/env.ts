@@ -7,6 +7,7 @@ const envSchema = z.object({
 	ENV: z.enum(["production", "development"]).nonoptional(),
 
 	DATABASE_URL: z.string().nonempty(),
+	REDIS_URL: z.string().nonempty(),
 
 	FM_API: z.string().nonempty(),
 
