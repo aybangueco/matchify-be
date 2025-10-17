@@ -223,6 +223,9 @@ chatRouter.get(
 							? sessionConnections.get(usersRoom[0])
 							: sessionConnections.get(usersRoom[1]);
 
+					// Delete room
+					redis.del(userWSSession.room);
+
 					otherWSSession?.ws.send(
 						JSON.stringify({
 							type: "DISCONNECTED",
