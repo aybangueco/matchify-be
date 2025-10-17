@@ -218,10 +218,9 @@ chatRouter.get(
 				if (userWSSession && userWSSession.room !== null) {
 					const usersRoom = await redis.hvals(userWSSession.room);
 
-					const otherWSSession =
-						usersRoom[0] !== user.id
-							? sessionConnections.get(usersRoom[0])
-							: sessionConnections.get(usersRoom[1]);
+					const otherID =
+						usersRoom[0] !== user.id ? usersRoom[0] : usersRoom[1];
+					const otherWSSession = sessionConnections.get(otherID);
 
 					// Delete room
 					redis.del(userWSSession.room);
@@ -232,6 +231,9 @@ chatRouter.get(
 							message: `${user.username} disconnected`,
 						}),
 					);
+
+					// Delete socket session of other user
+					sessionConnections.delete(otherID);
 				}
 
 				// Final cleanup
