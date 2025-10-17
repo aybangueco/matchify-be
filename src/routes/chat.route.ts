@@ -2,7 +2,11 @@ import type { Context } from "hono";
 import { upgradeWebSocket } from "hono/bun";
 import redis from "@/config/redis";
 import createApp from "@/lib/create-app";
-import type { AppBindings, WSSessionContext } from "@/lib/types";
+import type {
+	AppBindings,
+	WebSocketMessage,
+	WSSessionContext,
+} from "@/lib/types";
 import { requireAuthenticated } from "@/middlewares/auth";
 import { getArtistsByUserID } from "@/repository";
 
@@ -29,7 +33,11 @@ chatRouter.get(
 
 				// Set user to have active session connection
 				if (!sessionConnections.has(user.id)) {
-					sessionConnections.set(user.id, { room: null, ws });
+					sessionConnections.set(user.id, {
+						info: { username: user.username ?? "N/A" },
+						room: null,
+						ws,
+					});
 				}
 
 				// Matching logic
@@ -70,18 +78,43 @@ chatRouter.get(
 								]);
 
 								// Update websocket reference of existing users sessions
-								sessionConnections.set(user.id, { room: roomId, ws });
+								sessionConnections.set(user.id, {
+									info: user1.info,
+									room: roomId,
+									ws,
+								});
 								sessionConnections.set(splittedCandidateKey[1], {
+									info: user2.info,
 									room: roomId,
 									ws: user2.ws,
 								});
 
+								const artists =
+									common.length === 1
+										? common[0].artistName
+										: common.length === 2
+											? `${common[0].artistName} & ${common[1].artistName}`
+											: `${common
+													.slice(0, -1)
+													.map((e) => e.artistName)
+													.join(
+														", ",
+													)} and ${common[common.length - 1].artistName}`;
+
 								// Broadcast to users the current status of their matchmaking
 								user1.ws.send(
-									JSON.stringify({ type: "CONNECTED", message: "Match found" }),
+									JSON.stringify({
+										type: "CONNECTED",
+										connectedTo: user2.info,
+										message: `You matched with ${user2.info.username} and you both listen to ${artists}`,
+									}),
 								);
 								user2.ws.send(
-									JSON.stringify({ type: "CONNECTED", message: "Match found" }),
+									JSON.stringify({
+										type: "CONNECTED",
+										connectedTo: user1.info,
+										message: `You matched with ${user1.info.username} and you both listen to ${artists}`,
+									}),
 								);
 							}
 
@@ -110,6 +143,54 @@ chatRouter.get(
 						}),
 					);
 					return ws.close();
+				}
+
+				const userWSSession = sessionConnections.get(user.id);
+
+				if (!userWSSession || !userWSSession.room) {
+					ws.send(
+						JSON.stringify({
+							type: "DISCONNECTED",
+							message: "Disconnected from server",
+						}),
+					);
+					return ws.close();
+				}
+
+				const usersRoom = await redis.hvals(userWSSession.room);
+
+				const otherID = user.id !== usersRoom[0] ? usersRoom[0] : usersRoom[1];
+				const otherWSSession = sessionConnections.get(otherID);
+
+				if (!otherWSSession || !otherWSSession.room) {
+					ws.send(
+						JSON.stringify({
+							type: "DISCONNECTED",
+							message: "Disconnected from server",
+						}),
+					);
+					return ws.close();
+				}
+
+				const message = event.data;
+				const parsedMessage: WebSocketMessage = JSON.parse(message as string);
+
+				if (parsedMessage.fromID === user.id) {
+					otherWSSession.ws.send(
+						JSON.stringify({
+							type: "MESSAGE",
+							message: parsedMessage.message,
+							fromID: user.id,
+						}),
+					);
+				} else {
+					userWSSession.ws.send(
+						JSON.stringify({
+							type: "MESSAGE",
+							message: parsedMessage.message,
+							fromID: otherID,
+						}),
+					);
 				}
 			},
 			async onClose(_event, ws) {

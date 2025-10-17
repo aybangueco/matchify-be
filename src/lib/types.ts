@@ -1,4 +1,4 @@
-import type { JWTPayload } from "hono/utils/jwt/types";
+import type { WSContext } from "hono/ws";
 import type { Session, User } from "@/db/schemas";
 
 export type AppBindings = {
@@ -7,10 +7,6 @@ export type AppBindings = {
 		session: Session | null;
 	};
 };
-
-export interface UserPayload extends JWTPayload {
-	sub: unknown;
-}
 
 export type ArtistMatchInfoImage = {
 	"#text": string;
@@ -25,3 +21,17 @@ export interface ArtistMatchInfo {
 	streamable: string;
 	image: ArtistMatchInfoImage[];
 }
+
+export interface WSSessionContext {
+	info: {
+		username: string;
+	};
+	room: string | null;
+	ws: WSContext;
+}
+
+export type WebSocketMessage = {
+	type: "MESSAGE";
+	message: string;
+	fromID: string;
+};
