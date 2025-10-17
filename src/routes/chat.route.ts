@@ -1,15 +1,14 @@
 import type { Context } from "hono";
 import { upgradeWebSocket } from "hono/bun";
-import type { WSContext } from "hono/ws";
 import redis from "@/config/redis";
 import createApp from "@/lib/create-app";
-import type { AppBindings } from "@/lib/types";
+import type { AppBindings, WSSessionContext } from "@/lib/types";
 import { requireAuthenticated } from "@/middlewares/auth";
 import { getArtistsByUserID } from "@/repository";
 
 const chatRouter = createApp();
 
-const sessionConnections = new Map<string, WSContext>();
+const sessionConnections = new Map<string, WSSessionContext>();
 
 chatRouter.use(requireAuthenticated);
 
@@ -23,18 +22,15 @@ chatRouter.get(
 					return ws.close();
 				}
 
-				// Storing user's websocket sessionConnections
-				// if no existing user have sessionConnections we can skip it
-				const existingConnection = sessionConnections.get(user.id);
-
-				if (!existingConnection) {
-					sessionConnections.set(user.id, ws);
-				}
-
 				const artistsQueue = await redis.keys("queue-artist:*");
 				const existingQueue = await redis.get(`queue-artist:${user.id}`);
 
 				const topArtists = await getArtistsByUserID(user.id);
+
+				// Set user to have active session connection
+				if (!sessionConnections.has(user.id)) {
+					sessionConnections.set(user.id, { room: null, ws });
+				}
 
 				// Matching logic
 				for (const key of artistsQueue) {
@@ -60,30 +56,37 @@ chatRouter.get(
 							await redis.del(`queue-artist:${user.id}`);
 							await redis.del(key);
 
-							// Store users in redis room referencing both of their id
-							await redis.hmset(roomId, [
-								"first-user",
-								user.id,
-								"second-user",
-								splittedCandidateKey[1],
-							]);
-
-							// Broadcast to both users when they have matched
+							// Update websocket room sessions of users
 							const user1 = sessionConnections.get(user.id);
 							const user2 = sessionConnections.get(splittedCandidateKey[1]);
 
-							if (user1)
-								user1.send(
-									JSON.stringify({ type: "CONNECTED", message: "Match found" }),
-								);
+							if (user1 && user2) {
+								// Create room storing both users
+								await redis.hmset(roomId, [
+									"first-user",
+									user.id,
+									"second-user",
+									splittedCandidateKey[1],
+								]);
 
-							if (user2)
-								user2.send(
+								// Update websocket reference of existing users sessions
+								sessionConnections.set(user.id, { room: roomId, ws });
+								sessionConnections.set(splittedCandidateKey[1], {
+									room: roomId,
+									ws: user2.ws,
+								});
+
+								// Broadcast to users the current status of their matchmaking
+								user1.ws.send(
 									JSON.stringify({ type: "CONNECTED", message: "Match found" }),
 								);
+								user2.ws.send(
+									JSON.stringify({ type: "CONNECTED", message: "Match found" }),
+								);
+							}
+
+							break;
 						}
-
-						break;
 					}
 				}
 
@@ -96,48 +99,59 @@ chatRouter.get(
 					);
 				}
 			},
-			async onMessage(event, ws) {},
-			async onClose() {
+			async onMessage(event, ws) {
 				const user = c.get("user");
 
-				if (!user) return;
+				if (!user) {
+					ws.send(
+						JSON.stringify({
+							type: "DISCONNECTED",
+							message: "Disconnected from server",
+						}),
+					);
+					return ws.close();
+				}
+			},
+			async onClose(_event, ws) {
+				const user = c.get("user");
 
-				console.log("User deleted from queue");
-				await redis.del(`queue-artist:${user.id}`);
-
-				const rooms = await redis.keys("room:*");
-
-				for (const room of rooms) {
-					const match = room.match(/^room:(.+)-(.+)$/);
-					if (!match) continue;
-
-					const [, userA, userB] = match;
-
-					if (user.id === userA || user.id === userB) {
-						const otherUserId = user.id === userA ? userB : userA;
-
-						console.log(`Cleaning up room: ${room}`);
-						await redis.del(room);
-
-						// Disconnect the other user if still connected
-						const otherUserWS = sessionConnections.get(otherUserId);
-						if (otherUserWS) {
-							otherUserWS.send(
-								JSON.stringify({
-									type: "DISCONNECTED",
-									message: "The other user has left the chat.",
-								}),
-							);
-							otherUserWS.close();
-							sessionConnections.delete(otherUserId);
-						}
-
-						// Clean up current user session
-						sessionConnections.delete(user.id);
-						break; // no need to continue searching rooms
-					}
+				if (!user) {
+					ws.send(
+						JSON.stringify({
+							type: "DISCONNECTED",
+							message: "Disconnected from server",
+						}),
+					);
+					return ws.close();
 				}
 
+				// Queue cleanup
+				const existingQueue = await redis.get(`queue-artist:${user.id}`);
+				if (existingQueue) {
+					console.log("User deleted from queue");
+					await redis.del(`queue-artist:${user.id}`);
+				}
+
+				// Room cleanup when other user disconnects
+				const userWSSession = sessionConnections.get(user.id);
+				if (userWSSession && userWSSession.room !== null) {
+					const usersRoom = await redis.hvals(userWSSession.room);
+
+					const otherWSSession =
+						usersRoom[0] !== user.id
+							? sessionConnections.get(usersRoom[0])
+							: sessionConnections.get(usersRoom[1]);
+
+					otherWSSession?.ws.send(
+						JSON.stringify({
+							type: "DISCONNECTED",
+							message: `${user.username} disconnected`,
+						}),
+					);
+				}
+
+				// Final cleanup
+				sessionConnections.delete(user.id);
 				console.log("Connection closed");
 			},
 		};
