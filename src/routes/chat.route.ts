@@ -106,14 +106,28 @@ chatRouter.get(
 									JSON.stringify({
 										type: "CONNECTED",
 										connectedTo: user2.info,
-										message: `You matched with ${user2.info.username} and you both listen to ${artists}`,
 									}),
 								);
+								user1.ws.send(
+									JSON.stringify({
+										type: "MESSAGE",
+										message: `You matched with ${user2.info.username} and you both listen to ${artists}`,
+										from: "SYSTEM",
+									}),
+								);
+
 								user2.ws.send(
 									JSON.stringify({
 										type: "CONNECTED",
 										connectedTo: user1.info,
+									}),
+								);
+
+								user2.ws.send(
+									JSON.stringify({
+										type: "MESSAGE",
 										message: `You matched with ${user1.info.username} and you both listen to ${artists}`,
+										from: "SYSTEM",
 									}),
 								);
 							}
@@ -228,7 +242,15 @@ chatRouter.get(
 					otherWSSession?.ws.send(
 						JSON.stringify({
 							type: "DISCONNECTED",
+							message: "Disconnected from server",
+						}),
+					);
+
+					otherWSSession?.ws.send(
+						JSON.stringify({
+							type: "MESSAGE",
 							message: `${user.username} disconnected`,
+							from: "SYSTEM",
 						}),
 					);
 
