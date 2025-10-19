@@ -175,12 +175,12 @@ chatRouter.get(
 				const message = event.data;
 				const parsedMessage: WebSocketMessage = JSON.parse(message as string);
 
-				if (parsedMessage.fromID === user.id) {
+				if (parsedMessage.from === user.id) {
 					otherWSSession.ws.send(
 						JSON.stringify({
 							type: "MESSAGE",
 							message: parsedMessage.message,
-							fromID: user.id,
+							from: user.id,
 						}),
 					);
 				} else {
@@ -188,7 +188,7 @@ chatRouter.get(
 						JSON.stringify({
 							type: "MESSAGE",
 							message: parsedMessage.message,
-							fromID: otherID,
+							from: otherID,
 						}),
 					);
 				}

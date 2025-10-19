@@ -33,5 +33,5 @@ export interface WSSessionContext {
 export type WebSocketMessage = {
 	type: "MESSAGE";
 	message: string;
-	fromID: string;
+	from: string;
 };
