@@ -35,3 +35,11 @@ export type WebSocketMessage = {
 	message: string;
 	from: string;
 };
+
+export type WebSocketState = {
+	type: "STATE";
+	typing: boolean;
+	from: string;
+};
+
+export type WebSocketEventData = WebSocketMessage | WebSocketState;

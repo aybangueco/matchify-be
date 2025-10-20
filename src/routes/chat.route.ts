@@ -4,7 +4,7 @@ import redis from "@/config/redis";
 import createApp from "@/lib/create-app";
 import type {
 	AppBindings,
-	WebSocketMessage,
+	WebSocketEventData,
 	WSSessionContext,
 } from "@/lib/types";
 import { requireAuthenticated } from "@/middlewares/auth";
@@ -186,25 +186,47 @@ chatRouter.get(
 					return ws.close();
 				}
 
-				const message = event.data;
-				const parsedMessage: WebSocketMessage = JSON.parse(message as string);
+				const eventData = event.data;
+				const parsedEventData: WebSocketEventData = JSON.parse(
+					eventData as string,
+				);
 
-				if (parsedMessage.from === user.id) {
-					otherWSSession.ws.send(
-						JSON.stringify({
-							type: "MESSAGE",
-							message: parsedMessage.message,
-							from: user.id,
-						}),
-					);
-				} else {
-					userWSSession.ws.send(
-						JSON.stringify({
-							type: "MESSAGE",
-							message: parsedMessage.message,
-							from: otherID,
-						}),
-					);
+				if (parsedEventData.type === "MESSAGE") {
+					if (parsedEventData.from === user.id) {
+						otherWSSession.ws.send(
+							JSON.stringify({
+								type: "MESSAGE",
+								message: parsedEventData.message,
+								from: user.id,
+							}),
+						);
+					} else {
+						userWSSession.ws.send(
+							JSON.stringify({
+								type: "MESSAGE",
+								message: parsedEventData.message,
+								from: otherID,
+							}),
+						);
+					}
+				} else if (parsedEventData.type === "STATE") {
+					if (parsedEventData.from === user.id) {
+						otherWSSession.ws.send(
+							JSON.stringify({
+								type: "STATE",
+								typing: parsedEventData.typing,
+								from: user.id,
+							}),
+						);
+					} else {
+						userWSSession.ws.send(
+							JSON.stringify({
+								type: "STATE",
+								typing: parsedEventData.typing,
+								from: otherID,
+							}),
+						);
+					}
 				}
 			},
 			async onClose(_event, ws) {
