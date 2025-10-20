@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import type { QueryResult } from "pg";
 import db from "@/config/db";
+import { user } from "@/db/schemas";
 import {
 	type Profile,
 	type ProfileInsert,
@@ -8,13 +9,41 @@ import {
 	profilesTable,
 } from "@/db/schemas/profiles";
 
-export async function getProfileByUserID(
-	userID: string,
-): Promise<Profile | null> {
+export async function getProfileByUserID(userID: string) {
 	const userProfile = await db
-		.select()
-		.from(profilesTable)
-		.where(eq(profilesTable.userID, userID));
+		.select({
+			id: profilesTable.id,
+			userID: profilesTable.userID,
+			bio: profilesTable.bio,
+			location: profilesTable.location,
+			pronoun: profilesTable.pronoun,
+			username: user.username,
+			name: user.name,
+			createdAt: profilesTable.updatedAt,
+			updatedAt: profilesTable.updatedAt,
+		})
+		.from(user)
+		.where(eq(user.id, userID))
+		.leftJoin(profilesTable, eq(profilesTable.userID, user.id));
+	return userProfile[0];
+}
+
+export async function getProfileByUsername(username: string) {
+	const userProfile = await db
+		.select({
+			id: profilesTable.id,
+			userID: profilesTable.userID,
+			bio: profilesTable.bio,
+			location: profilesTable.location,
+			pronoun: profilesTable.pronoun,
+			username: user.username,
+			name: user.name,
+			createdAt: profilesTable.updatedAt,
+			updatedAt: profilesTable.updatedAt,
+		})
+		.from(user)
+		.where(eq(user.username, username))
+		.leftJoin(profilesTable, eq(profilesTable.userID, user.id));
 	return userProfile[0];
 }
 

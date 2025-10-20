@@ -11,6 +11,7 @@ import { requireAuthenticated } from "@/middlewares/auth";
 import {
 	createProfile,
 	getProfileByUserID,
+	getProfileByUsername,
 	updateProfileByID,
 } from "@/repository";
 
@@ -37,10 +38,10 @@ profileRouter.get("/", async (c) => {
 	);
 });
 
-profileRouter.get("/:id", async (c) => {
-	const userID = c.req.param("id");
+profileRouter.get("/:username", async (c) => {
+	const username = c.req.param("username");
 
-	const profile = await getProfileByUserID(userID);
+	const profile = await getProfileByUsername(username);
 
 	if (!profile) {
 		throw errors.NotFoundErr();
