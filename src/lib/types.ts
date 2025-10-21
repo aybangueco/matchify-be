@@ -30,6 +30,18 @@ export interface WSSessionContext {
 	ws: WSContext;
 }
 
+export type WebSocketConnected = {
+	type: "CONNECTED";
+	connectedTo: {
+		username: string;
+	};
+};
+
+export type WebSocketDisconnected = {
+	type: "DISCONNECTED";
+	message: string;
+};
+
 export type WebSocketMessage = {
 	type: "MESSAGE";
 	message: string;
@@ -42,4 +54,8 @@ export type WebSocketState = {
 	from: string;
 };
 
-export type WebSocketEventData = WebSocketMessage | WebSocketState;
+export type WebSocketEventData =
+	| WebSocketConnected
+	| WebSocketDisconnected
+	| WebSocketMessage
+	| WebSocketState;

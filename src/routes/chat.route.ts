@@ -1,10 +1,15 @@
 import type { Context } from "hono";
 import { upgradeWebSocket } from "hono/bun";
 import redis from "@/config/redis";
+import { sendJsonMessage } from "@/lib/chat-helpers";
 import createApp from "@/lib/create-app";
 import type {
 	AppBindings,
+	WebSocketConnected,
+	WebSocketDisconnected,
 	WebSocketEventData,
+	WebSocketMessage,
+	WebSocketState,
 	WSSessionContext,
 } from "@/lib/types";
 import { requireAuthenticated } from "@/middlewares/auth";
@@ -103,13 +108,13 @@ chatRouter.get(
 
 								// Broadcast to users the current status of their matchmaking
 								user1.ws.send(
-									JSON.stringify({
+									sendJsonMessage<WebSocketConnected>({
 										type: "CONNECTED",
 										connectedTo: user2.info,
 									}),
 								);
 								user1.ws.send(
-									JSON.stringify({
+									sendJsonMessage<WebSocketMessage>({
 										type: "MESSAGE",
 										message: `You matched with ${user2.info.username} and you both listen to ${artists}`,
 										from: "SYSTEM",
@@ -117,14 +122,14 @@ chatRouter.get(
 								);
 
 								user2.ws.send(
-									JSON.stringify({
+									sendJsonMessage<WebSocketConnected>({
 										type: "CONNECTED",
 										connectedTo: user1.info,
 									}),
 								);
 
 								user2.ws.send(
-									JSON.stringify({
+									sendJsonMessage<WebSocketMessage>({
 										type: "MESSAGE",
 										message: `You matched with ${user1.info.username} and you both listen to ${artists}`,
 										from: "SYSTEM",
@@ -151,7 +156,7 @@ chatRouter.get(
 
 				if (!user) {
 					ws.send(
-						JSON.stringify({
+						sendJsonMessage<WebSocketDisconnected>({
 							type: "DISCONNECTED",
 							message: "Disconnected from server",
 						}),
@@ -163,7 +168,7 @@ chatRouter.get(
 
 				if (!userWSSession || !userWSSession.room) {
 					ws.send(
-						JSON.stringify({
+						sendJsonMessage<WebSocketDisconnected>({
 							type: "DISCONNECTED",
 							message: "Disconnected from server",
 						}),
@@ -178,7 +183,7 @@ chatRouter.get(
 
 				if (!otherWSSession || !otherWSSession.room) {
 					ws.send(
-						JSON.stringify({
+						sendJsonMessage<WebSocketDisconnected>({
 							type: "DISCONNECTED",
 							message: "Disconnected from server",
 						}),
@@ -194,7 +199,7 @@ chatRouter.get(
 				if (parsedEventData.type === "MESSAGE") {
 					if (parsedEventData.from === user.id) {
 						otherWSSession.ws.send(
-							JSON.stringify({
+							sendJsonMessage<WebSocketMessage>({
 								type: "MESSAGE",
 								message: parsedEventData.message,
 								from: user.id,
@@ -202,7 +207,7 @@ chatRouter.get(
 						);
 					} else {
 						userWSSession.ws.send(
-							JSON.stringify({
+							sendJsonMessage<WebSocketMessage>({
 								type: "MESSAGE",
 								message: parsedEventData.message,
 								from: otherID,
@@ -212,7 +217,7 @@ chatRouter.get(
 				} else if (parsedEventData.type === "STATE") {
 					if (parsedEventData.from === user.id) {
 						otherWSSession.ws.send(
-							JSON.stringify({
+							sendJsonMessage<WebSocketState>({
 								type: "STATE",
 								typing: parsedEventData.typing,
 								from: user.id,
@@ -220,7 +225,7 @@ chatRouter.get(
 						);
 					} else {
 						userWSSession.ws.send(
-							JSON.stringify({
+							sendJsonMessage<WebSocketState>({
 								type: "STATE",
 								typing: parsedEventData.typing,
 								from: otherID,
@@ -234,7 +239,7 @@ chatRouter.get(
 
 				if (!user) {
 					ws.send(
-						JSON.stringify({
+						sendJsonMessage<WebSocketDisconnected>({
 							type: "DISCONNECTED",
 							message: "Disconnected from server",
 						}),
@@ -262,14 +267,14 @@ chatRouter.get(
 					redis.del(userWSSession.room);
 
 					otherWSSession?.ws.send(
-						JSON.stringify({
+						sendJsonMessage<WebSocketDisconnected>({
 							type: "DISCONNECTED",
 							message: "Disconnected from server",
 						}),
 					);
 
 					otherWSSession?.ws.send(
-						JSON.stringify({
+						sendJsonMessage<WebSocketMessage>({
 							type: "MESSAGE",
 							message: `${user.username} disconnected`,
 							from: "SYSTEM",
