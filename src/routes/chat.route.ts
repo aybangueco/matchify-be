@@ -34,6 +34,17 @@ chatRouter.get(
 				const artistsQueue = await redis.keys("queue-artist:*");
 				const existingQueue = await redis.get(`queue-artist:${user.id}`);
 
+				if (existingQueue) {
+					ws.send(
+						sendJsonMessage<WebSocketDisconnected>({
+							type: "DISCONNECTED",
+							message: "Existing queue found",
+						}),
+					);
+
+					return ws.close();
+				}
+
 				const topArtists = await getArtistsByUserID(user.id);
 
 				// Set user to have active session connection
