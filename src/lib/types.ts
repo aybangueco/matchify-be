@@ -8,7 +8,7 @@ export type AppBindings = {
 	};
 };
 
-export type ArtistMatchInfoImage = {
+export type MatchInfoImage = {
 	"#text": string;
 	size: "small" | "medium" | "large" | "extralarge";
 };
@@ -19,7 +19,16 @@ export interface ArtistMatchInfo {
 	mbid: string;
 	url: string;
 	streamable: string;
-	image: ArtistMatchInfoImage[];
+	image: MatchInfoImage[];
+}
+
+export interface AlbumMatchInfo {
+	name: string;
+	artist: string;
+	url: string;
+	image: MatchInfoImage[];
+	streamable: string;
+	mbid: string;
 }
 
 export interface WSSessionContext {

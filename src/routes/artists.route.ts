@@ -52,12 +52,17 @@ artistRouter.get("/search", async (c) => {
 
 artistRouter.get("/:id", async (c) => {
 	const user = c.get("user");
+	const id = c.req.param("id");
 
 	if (!user) {
 		throw errors.AuthRequiredErr();
 	}
 
-	const artists = await getArtistsByUserID(user.id);
+	const artists = await getArtistsByUserID(id);
+
+	if (!artists) {
+		throw errors.NotFoundErr();
+	}
 
 	return c.json(
 		{

@@ -7,7 +7,12 @@ import { auth } from "./lib/auth";
 import createApp from "./lib/create-app";
 import { handleAPIErrors, handleNotFoundRoutes } from "./lib/errors";
 import { authenticate } from "./middlewares/auth";
-import { artistRouter, chatRouter, profileRouter } from "./routes";
+import {
+	albumsRouter,
+	artistRouter,
+	chatRouter,
+	profileRouter,
+} from "./routes";
 
 const app = createApp();
 
@@ -43,6 +48,7 @@ app.on(["POST", "GET"], "/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.route("/profile", profileRouter);
 app.route("/artist", artistRouter);
+app.route("/album", albumsRouter);
 
 app.route("/chat", chatRouter);
 
