@@ -6,7 +6,7 @@ import env from "./config/env";
 import { auth } from "./lib/auth";
 import createApp from "./lib/create-app";
 import { handleAPIErrors, handleNotFoundRoutes } from "./lib/errors";
-import { authenticate } from "./middlewares/auth";
+import { authenticate } from "./middlewares";
 import {
 	albumsRouter,
 	artistRouter,

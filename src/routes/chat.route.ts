@@ -18,7 +18,7 @@ import type {
 	WebSocketState,
 	WSSessionContext,
 } from "@/lib/types";
-import { requireAuthenticated } from "@/middlewares/auth";
+import { requireAuthenticated } from "@/middlewares";
 import { getArtistsByUserID } from "@/repository";
 
 const chatRouter = createApp();

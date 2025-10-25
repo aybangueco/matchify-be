@@ -7,7 +7,7 @@ import createApp from "@/lib/create-app";
 import { errors } from "@/lib/errors";
 import { HttpStatus } from "@/lib/http";
 import type { ArtistMatchInfo } from "@/lib/types";
-import { requireAuthenticated } from "@/middlewares/auth";
+import { requireAuthenticated } from "@/middlewares";
 import {
 	createArtist,
 	deleteArtist,
