@@ -1,7 +1,13 @@
 import type { Context } from "hono";
 import { upgradeWebSocket } from "hono/bun";
 import redis from "@/config/redis";
-import { sendJsonMessage } from "@/lib/chat-helpers";
+import {
+	addUserToQueue,
+	createRoom,
+	deleteUserFromQueue,
+	sendJsonMessage,
+	setupChatQueue,
+} from "@/lib/chat-helpers";
 import createApp from "@/lib/create-app";
 import type {
 	AppBindings,
@@ -22,6 +28,39 @@ const sessionConnections = new Map<string, WSSessionContext>();
 chatRouter.use(requireAuthenticated);
 
 chatRouter.get(
+	"/album",
+	upgradeWebSocket((c: Context<AppBindings>) => {
+		return {
+			async onOpen(_event, ws) {
+				const user = c.get("user");
+
+				if (!user) {
+					return ws.close();
+				}
+
+				const { chatQueue, existingQueue } = await setupChatQueue(
+					"album",
+					user.id,
+				);
+
+				if (existingQueue) {
+					ws.send(
+						sendJsonMessage<WebSocketDisconnected>({
+							type: "DISCONNECTED",
+							message: "Existing queue found",
+						}),
+					);
+
+					return ws.close();
+				}
+			},
+			onMessage(event, ws) {},
+			onClose(event, ws) {},
+		};
+	}),
+);
+
+chatRouter.get(
 	"/artist",
 	upgradeWebSocket((c: Context<AppBindings>) => {
 		return {
@@ -31,8 +70,10 @@ chatRouter.get(
 					return ws.close();
 				}
 
-				const artistsQueue = await redis.keys("queue-artist:*");
-				const existingQueue = await redis.get(`queue-artist:${user.id}`);
+				const { chatQueue, existingQueue } = await setupChatQueue(
+					"artist",
+					user.id,
+				);
 
 				if (existingQueue) {
 					ws.send(
@@ -57,7 +98,7 @@ chatRouter.get(
 				}
 
 				// Matching logic
-				for (const key of artistsQueue) {
+				for (const key of chatQueue) {
 					const candidate = await redis.get(key);
 
 					// This means if there is candidate and if candidate is not equal to the user itself
@@ -72,12 +113,9 @@ chatRouter.get(
 						if (common.length > 0) {
 							console.log("Match found");
 							const splittedCandidateKey = key.split(":");
-							const roomId = `room:${user.id}-${splittedCandidateKey[1]}`;
-
-							console.log(`room created: ${roomId}`);
 
 							// Delete matched users from queue
-							await redis.del(`queue-artist:${user.id}`);
+							deleteUserFromQueue("artist", user.id);
 							await redis.del(key);
 
 							// Update websocket room sessions of users
@@ -86,12 +124,11 @@ chatRouter.get(
 
 							if (user1 && user2) {
 								// Create room storing both users
-								await redis.hmset(roomId, [
-									"first-user",
+
+								const roomId = await createRoom(
 									user.id,
-									"second-user",
 									splittedCandidateKey[1],
-								]);
+								);
 
 								// Update websocket reference of existing users sessions
 								sessionConnections.set(user.id, {
@@ -156,9 +193,10 @@ chatRouter.get(
 				// If no matched found we add the user to the queue instead
 				if (!existingQueue) {
 					console.log("User added to queue");
-					await redis.set(
-						`queue-artist:${user.id}`,
-						JSON.stringify(topArtists.map((t) => t.artistName)),
+					addUserToQueue(
+						"artist",
+						user.id,
+						topArtists.map((t) => t.artistName),
 					);
 				}
 			},
@@ -262,7 +300,7 @@ chatRouter.get(
 				const existingQueue = await redis.get(`queue-artist:${user.id}`);
 				if (existingQueue) {
 					console.log("User deleted from queue");
-					await redis.del(`queue-artist:${user.id}`);
+					deleteUserFromQueue("artist", user.id);
 				}
 
 				// Room cleanup when other user disconnects
