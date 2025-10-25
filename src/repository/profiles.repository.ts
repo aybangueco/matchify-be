@@ -1,13 +1,11 @@
 import { and, eq } from "drizzle-orm";
 import type { QueryResult } from "pg";
 import db from "@/config/db";
-import { user } from "@/db/schemas";
-import {
+import { 
 	type Profile,
 	type ProfileInsert,
 	type ProfileUpdate,
-	profilesTable,
-} from "@/db/schemas/profiles";
+	profilesTable,user, } from "@/db/schemas";
 
 export async function getProfileByUserID(userID: string) {
 	const userProfile = await db
